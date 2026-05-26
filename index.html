@@ -2,7 +2,11 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#020209" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Colin — 数字媒体艺术 × AI Agent 开发者的个人作品集" />
   <title>Colin | Digital Creative</title>
 
   <!--
@@ -19,6 +23,9 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+  <!-- 噪点质感层：给画面增加胶片/纸质感，提升高级感 -->
+  <div class="noise-overlay" aria-hidden="true"></div>
 
   <!-- 自定义光标（桌面端） -->
   <div class="cursor-dot" id="cursorDot"></div>

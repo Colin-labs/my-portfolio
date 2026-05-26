@@ -787,3 +787,154 @@ a { text-decoration: none; color: inherit; }
   .contact-box { padding: 1.5rem 1rem; }
   .loader-logo { font-size: 2.2rem; }
 }
+
+/* ================================================
+   噪点质感层
+   SVG fractalNoise 生成随机颗粒，叠加在页面最顶层
+   opacity极低（0.03）只是"感觉"，不影响内容
+   mix-blend-mode: overlay让噪点融入背景而不是遮挡
+   作用：消除数字屏幕的"塑料感"，增加胶片/纸张质感
+================================================ */
+.noise-overlay {
+  position: fixed; inset: 0; z-index: 9800;
+  pointer-events: none;
+  opacity: .03;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 250px 250px;
+  mix-blend-mode: overlay;
+}
+@media (pointer: coarse) { .noise-overlay { opacity: .022; } }
+
+/* ================================================
+   GPU 硬件加速
+   will-change 提示浏览器预先创建独立合成层
+   backface-visibility: hidden 防止动画闪烁
+   只对真正需要动画的元素开启，避免内存浪费
+================================================ */
+.hero-glow,
+.bg-gradient::before,
+.bg-gradient::after {
+  will-change: transform, opacity;
+}
+[data-aos] {
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.cursor-dot,
+.cursor-ring {
+  will-change: left, top;
+}
+
+/* ================================================
+   iOS Safari 玻璃拟态增强
+   iOS Safari 支持 -webkit-backdrop-filter
+   这里单独给它更高的 blur 值，让 iOS 上效果更通透
+================================================ */
+@supports (-webkit-backdrop-filter: blur(1px)) and (not (backdrop-filter: blur(1px))) {
+  .glass {
+    -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.05);
+    background: rgba(255,255,255,.05);
+  }
+}
+
+/* ================================================
+   减少动画（无障碍 + 低端设备节能）
+   prefers-reduced-motion：用户系统设置了"减少动画"时触发
+   让所有动画瞬间完成，避免晕动症，也减少老设备负担
+================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .hero-glow,
+  .bg-gradient::before,
+  .bg-gradient::after,
+  .status-dot,
+  .scroll-line,
+  .highlight,
+  .skill-fill::before,
+  .loader-fill {
+    animation: none !important;
+  }
+  [data-aos] {
+    transition: opacity .2s ease !important;
+    transform: none !important;
+  }
+  .glass, .glass::before, .glass::after {
+    transition: border-color .2s, box-shadow .2s !important;
+  }
+}
+
+/* ================================================
+   移动端触摸目标优化
+   Apple HIG 和 Google Material 均要求触摸目标 ≥ 44px
+   touch-action: manipulation 禁止双击缩放，让点击更灵敏
+================================================ */
+@media (pointer: coarse) {
+  .btn {
+    min-height: 48px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .contact-item {
+    min-height: 52px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mobile-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 56px;
+    width: 100%;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nav-toggle {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* 手机上禁用位移hover效果，防止残留偏移 */
+  .contact-item:hover { transform: none; }
+  .btn-primary:hover,
+  .btn-ghost:hover { transform: none; }
+}
+
+/* ================================================
+   移动端字体和间距精细调整
+   目标：手机上高级感不下降
+================================================ */
+@media (max-width: 768px) {
+  .hero-status    { font-size: .6rem; letter-spacing: 1px; }
+  .hero-tag       { font-size: .72rem; letter-spacing: 2px; }
+  .hero-sub-wrap  { font-size: 1rem; margin-bottom: 2.2rem; }
+  .about-card     { padding: 1.8rem 1.2rem; }
+  .about-card h3  { font-size: .78rem; }
+  .about-card p   { font-size: .82rem; }
+  .skill-item     { padding: 1.2rem 1.2rem; }
+  .skill-name     { font-size: .82rem; }
+  .aigc-card      { padding: 2rem 1.5rem; }
+  .aigc-card h3   { font-size: 1rem; }
+  .aigc-card p    { font-size: .83rem; }
+  .contact-desc   { font-size: .9rem; margin-bottom: 1.8rem; }
+  .contact-item   { font-size: .85rem; padding: 1rem 1.2rem; }
+  .section-title  { margin-bottom: 2.5rem; }
+  /* 移动端降低背景动画频率节省性能 */
+  .bg-gradient::before { animation-duration: 45s; }
+  .bg-gradient::after  { animation-duration: 55s; }
+  /* 移动端隐藏轨迹圆点节省渲染 */
+  .spark { display: none; }
+}
+
+/* 极小屏（iPhone SE 等 375px 以下） */
+@media (max-width: 374px) {
+  .hero-status     { display: none; }
+  .hero-title      { font-size: clamp(2.1rem, 9vw, 2.8rem); letter-spacing: -.5px; }
+  .about-grid      { gap: .7rem; }
+  .about-card      { padding: 1.4rem .9rem; }
+  .section-title   { font-size: 1.4rem; }
+  .contact-box     { padding: 1.2rem .8rem; }
+}

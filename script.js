@@ -153,29 +153,44 @@ function type() {
 setTimeout(type, 1800);
 
 // ================================================
-// 粒子背景（升级：鼠标排斥力）
-// 120px范围内粒子被轻微排斥，离开后阻尼回归
+// 粒子背景
+// 升级：支持 devicePixelRatio（高分屏清晰）
+// 移动端：减少至 30 颗，连线距离缩短，省性能
+// 鼠标排斥：120px范围内粒子被推开，阻尼回归
 // ================================================
 const canvas = document.getElementById('particles');
 const ctx    = canvas.getContext('2d');
 let pts = [];
 let mouseX = -9999, mouseY = -9999;
 
+const mobile = isMobile();
+// 高分屏像素比（Retina屏=2，普通屏=1）
+const DPR = Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2);
+
 document.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
 
-function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  canvas.width  = w * DPR;
+  canvas.height = h * DPR;
+  canvas.style.width  = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.scale(DPR, DPR);
+}
 resize();
 window.addEventListener('resize', () => { resize(); pts = []; init(); });
 
 function init() {
   pts = [];
-  const count = isMobile() ? 50 : 100;
+  // 手机30颗、桌面100颗，平衡效果和性能
+  const count = mobile ? 30 : 100;
   for (let i = 0; i < count; i++) {
-    const vx = (Math.random() - .5) * .35;
-    const vy = (Math.random() - .5) * .35;
+    const spd = mobile ? .25 : .35;
+    const vx  = (Math.random() - .5) * spd;
+    const vy  = (Math.random() - .5) * spd;
     pts.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
+      x: Math.random() * innerWidth,
+      y: Math.random() * innerHeight,
       vx, vy, baseVx: vx, baseVy: vy,
       s: Math.random() * 1.4 + .3,
       o: Math.random() * .28 + .05,
@@ -184,13 +199,24 @@ function init() {
 }
 init();
 
+// 页面不可见时暂停动画，节省电量
+let animPaused = false;
+document.addEventListener('visibilitychange', () => {
+  animPaused = document.hidden;
+});
+
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (animPaused) { requestAnimationFrame(draw); return; }
+
+  ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+  // 连线距离：手机70，桌面110（减少手机计算量）
+  const linkDist = mobile ? 70 : 110;
 
   for (let i = 0; i < pts.length; i++) {
     const p = pts[i];
 
-    if (!isMobile()) {
+    if (!mobile) {
       const dx   = p.x - mouseX, dy = p.y - mouseY;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < 120 && dist > 0) {
@@ -203,8 +229,8 @@ function draw() {
     p.vx += (p.baseVx - p.vx) * 0.02;
     p.vy += (p.baseVy - p.vy) * 0.02;
     p.x  += p.vx; p.y += p.vy;
-    if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
-    if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+    if (p.x < 0 || p.x > innerWidth)  p.vx *= -1;
+    if (p.y < 0 || p.y > innerHeight) p.vy *= -1;
 
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
@@ -214,11 +240,11 @@ function draw() {
     for (let j = i + 1; j < pts.length; j++) {
       const dx = p.x - pts[j].x, dy = p.y - pts[j].y;
       const d  = Math.sqrt(dx * dx + dy * dy);
-      if (d < 110) {
+      if (d < linkDist) {
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(pts[j].x, pts[j].y);
-        ctx.strokeStyle = `rgba(167,139,250,${.065 * (1 - d / 110)})`;
+        ctx.strokeStyle = `rgba(167,139,250,${.065 * (1 - d / linkDist)})`;
         ctx.lineWidth   = .5;
         ctx.stroke();
       }
