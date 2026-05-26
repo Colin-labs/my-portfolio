@@ -72,28 +72,48 @@ if (!isMobile()) {
 
 // ================================================
 // 导航栏：滚动效果 + 进度条 + 活跃高亮
+//
+// 性能关键优化：
+// 1. passive:true — 告知浏览器不会调用 preventDefault，
+//    允许滚动与 JS 并行执行，手机滚动不再等 JS
+// 2. requestAnimationFrame 节流 — 每帧最多更新一次 DOM，
+//    避免 scroll 事件每秒触发 100+ 次打满 CPU
+// 3. transform:scaleX() 代替 width — GPU 合成层渲染，
+//    不触发 Layout/Paint，是进度条流畅的核心
 // ================================================
 const navbar   = document.getElementById('navbar');
 const progress = document.getElementById('navProgress');
 const sections = document.querySelectorAll('section[id]');
 const navLinks = document.querySelectorAll('.nav-links a');
 
-window.addEventListener('scroll', () => {
-  navbar.classList.toggle('scrolled', window.scrollY > 50);
+let scrollRaf = false;
 
+window.addEventListener('scroll', () => {
+  if (scrollRaf) return;
+  scrollRaf = true;
+  requestAnimationFrame(onScroll);
+}, { passive: true });
+
+function onScroll() {
+  scrollRaf = false;
+  const sy    = window.scrollY;
   const total = document.body.scrollHeight - window.innerHeight;
-  progress.style.width = (window.scrollY / total * 100) + '%';
+
+  // GPU合成：scaleX 不触发 Layout
+  progress.style.transform = `scaleX(${total > 0 ? sy / total : 0})`;
+
+  navbar.classList.toggle('scrolled', sy > 50);
 
   let current = '';
   sections.forEach(sec => {
-    if (window.scrollY >= sec.offsetTop - 140) current = sec.id;
+    if (sy >= sec.offsetTop - 140) current = sec.id;
   });
   navLinks.forEach(a => {
     a.classList.toggle('active', a.getAttribute('href') === `#${current}`);
   });
 
   heroParallax();
-});
+}
 
 // ================================================
 // Hero 视差
@@ -237,10 +257,13 @@ function draw() {
     ctx.fillStyle = `rgba(167,139,250,${p.o})`;
     ctx.fill();
 
+    const linkDistSq = linkDist * linkDist;
     for (let j = i + 1; j < pts.length; j++) {
       const dx = p.x - pts[j].x, dy = p.y - pts[j].y;
-      const d  = Math.sqrt(dx * dx + dy * dy);
-      if (d < linkDist) {
+      const dSq = dx * dx + dy * dy;
+      // 先用平方比较，避免大多数情况下的 sqrt 开销
+      if (dSq < linkDistSq) {
+        const d = Math.sqrt(dSq);
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(pts[j].x, pts[j].y);

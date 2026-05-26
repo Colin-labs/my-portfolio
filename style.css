@@ -238,9 +238,11 @@ a { text-decoration: none; color: inherit; }
 
 .nav-progress {
   position: absolute; bottom: 0; left: 0;
-  height: 1px; width: 0;
+  height: 1px; width: 100%;
   background: linear-gradient(to right, var(--primary), var(--secondary), var(--blue));
-  transition: width .1s linear;
+  transform: scaleX(0);
+  transform-origin: left;
+  will-change: transform;
   box-shadow: 0 0 8px var(--primary);
 }
 
